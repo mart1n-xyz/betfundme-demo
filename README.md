@@ -2,7 +2,7 @@
 
 Interactive animated explainer for **BetFundMe** and Draft-to-Funding Markets.
 
-**[→ View Demo](https://kindainsecurebot.github.io/betfundme-demo/)**
+**[→ View Demo](https://mart1n-xyz.github.io/betfundme-demo/)**
 
 ## What is this?
 
