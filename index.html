@@ -446,7 +446,7 @@ p, .desc {
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-.fade-up.show {
+.fade-up.show, [data-step].show {
   opacity: 1;
   transform: translateY(0);
 }
@@ -741,7 +741,7 @@ p, .desc {
     <h2>Where does this go?</h2>
     <p style="font-size:1rem;color:#666;margin-bottom:1.25rem">BetFundMe is one goal, two sides, one shot. But the idea stretches in two directions.</p>
     <div class="compare">
-      <div class="compare-card fade-up" data-step="1" style="max-width:280px">
+      <div class="compare-card" data-step="1" style="max-width:280px">
         <h3 style="font-size:1rem">🌳 One park, many milestones</h3>
         <div style="display:flex;gap:0.75rem;justify-content:center;margin:0.75rem 0">
           <div style="text-align:center"><div style="font-size:1.3rem">🛝</div><div style="font-size:0.7rem;font-weight:600;color:#666">$5K</div></div>
@@ -752,15 +752,15 @@ p, .desc {
         </div>
 
       </div>
-      <div class="vs fade-up" data-step="1" style="visibility:hidden;width:0;overflow:hidden"></div>
-      <div class="compare-card fade-up" data-step="1" style="max-width:280px">
+      <div class="vs" data-step="1" style="visibility:hidden;width:0;overflow:hidden"></div>
+      <div class="compare-card" data-step="1" style="max-width:280px">
         <h3 style="font-size:1rem">🏘️ Many parks, one mechanism</h3>
         <div style="display:flex;gap:0.5rem;justify-content:center;margin:0.75rem 0">
           <div style="text-align:center"><div style="font-size:1.3rem">🌳</div><div style="font-size:0.65rem;font-weight:600">$10K</div></div>
           <div style="text-align:center"><div style="font-size:1.3rem">📚</div><div style="font-size:0.65rem;font-weight:600">$20K</div></div>
           <div style="text-align:center"><div style="font-size:1.3rem">🏊</div><div style="font-size:0.65rem;font-weight:600">$50K</div></div>
         </div>
-        <p class="fade-up" data-step="2" style="font-size:0.85rem;color:#555;line-height:1.5;margin-top:0.5rem">
+        <p data-step="2" style="font-size:0.85rem;color:#555;line-height:1.5;margin-top:0.5rem">
           Each project runs its own BetFundMe. Independent settlement — the crowd decides what gets built.
         </p>
       </div>
@@ -775,13 +775,13 @@ p, .desc {
       BetFundMe is one instance.<br>
       These extensions point at something deeper.
     </p>
-    <div class="fade-up" data-step="1" style="margin-top:1.25rem">
+    <div data-step="1" style="margin-top:1.25rem">
       <div class="protocol-box" style="text-align:left;max-width:520px">
         <h3 style="color:#1565c0;margin-bottom:0.75rem">Draft-to-Funding Markets</h3>
         <p style="font-size:0.95rem;color:#555;line-height:1.7">
           A class of mechanisms where <strong>bets on outcomes can be drafted into the funding that makes those outcomes happen</strong>.
         </p>
-        <p class="fade-up" data-step="2" style="font-size:0.95rem;color:#555;line-height:1.7;margin-top:0.75rem">
+        <p data-step="2" style="font-size:0.95rem;color:#555;line-height:1.7;margin-top:0.75rem">
           The bet isn't just a prediction — it's a <strong>conditional commitment</strong>. Losing liquidity becomes evidence that the underlying event or infrastructure was worth building. Drafting turns speculative capital into an effective funding fee.
         </p>
       </div>
@@ -868,10 +868,9 @@ p, .desc {
         el.classList.remove('show');
       }
     });
-    // Show fade-up elements that don't have a data-step (they show on first visible step)
+    // Show fade-up elements without data-step on step >= 1
     if (step >= 1) {
-      const fadeUps = slides[slideIdx].querySelectorAll('.fade-up:not([data-step])');
-      fadeUps.forEach((el, i) => {
+      slides[slideIdx].querySelectorAll('.fade-up:not([data-step])').forEach((el, i) => {
         setTimeout(() => el.classList.add('show'), i * 150);
       });
     }
