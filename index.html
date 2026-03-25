@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Draft-to-Funding Markets</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #fafafa;
+  color: #1a1a2e;
+  overflow: hidden;
+  height: 100vh;
+  user-select: none;
+}
+
+.deck {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+  text-align: center;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.slide.exit-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+h3 {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+p, .desc {
+  font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+  color: #444;
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+.subtitle {
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* Characters */
+.character {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.avatar.betty { background: linear-gradient(135deg, #d4edda, #a8e6a3); }
+.avatar.nick { background: linear-gradient(135deg, #f8d7da, #f5a3a8); }
+
+.char-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.char-quote {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  max-width: 200px;
+}
+
+.char-row {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 1.5rem 0;
+  flex-wrap: wrap;
+}
+
+/* Progress bar */
+.progress-wrap {
+  width: min(500px, 85vw);
+  margin: 1.5rem auto;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 0.4rem;
+}
+
+.progress-bar {
+  height: 28px;
+  background: #e9ecef;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #4caf50, #66bb6a);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: white;
+}
+
+.progress-goal {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #999;
+}
+
+/* Accounting */
+.ledger {
+  text-align: left;
+  max-width: 480px;
+  margin: 1rem auto;
+}
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.ledger-row.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ledger-row:nth-child(odd) { background: #f5f5f5; }
+.ledger-row .label { color: #555; }
+.ledger-row .value { font-weight: 700; }
+.ledger-row .value.green { color: #2e7d32; }
+.ledger-row .value.red { color: #c62828; }
+.ledger-row .value.blue { color: #1565c0; }
+.ledger-row.highlight {
+  background: linear-gradient(90deg, #e8f5e9, #c8e6c9);
+  font-weight: 600;
+}
+
+.ledger-divider {
+  height: 1px;
+  background: #ddd;
+  margin: 0.25rem 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.ledger-divider.show { opacity: 1; }
+
+/* Crowd */
+.crowd {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 1rem 0;
+  max-width: 400px;
+}
+
+.crowd-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+}
+
+.crowd-dot.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.crowd-dot.green { background: #66bb6a; }
+.crowd-dot.red { background: #ef5350; }
+
+/* Protocol box */
+.protocol-box {
+  background: white;
+  border: 2px solid #1a1a2e;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  max-width: 500px;
+  margin: 1.5rem auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+.protocol-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.protocol-step.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.step-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1a1a2e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Confetti */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+}
+
+/* Lightbulb pulse */
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,193,7,0.5)); }
+  50% { filter: drop-shadow(0 0 20px rgba(255,193,7,0.9)); }
+}
+
+.lightbulb {
+  font-size: 3rem;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Big emoji */
+.big-emoji {
+  font-size: clamp(3rem, 8vw, 5rem);
+  margin: 0.5rem 0;
+}
+
+/* Nick smirk animation */
+@keyframes smirk {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+.smirk { animation: smirk 2s ease-in-out infinite; }
+
+/* Shocked shake */
+@keyframes shock {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.shocked { animation: shock 0.5s ease-in-out; }
+
+/* Arrow flow */
+.flow-arrow {
+  font-size: 2rem;
+  color: #bbb;
+  margin: 0.5rem 0;
+}
+
+/* Navigation */
+.nav {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 50;
+}
+
+.nav-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  border-color: #1a1a2e;
+  color: #1a1a2e;
+  transform: scale(1.08);
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  transform: none;
+}
+
+.slide-counter {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #aaa;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Progress dots */
+.progress-dots {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 50;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ddd;
+  transition: all 0.3s ease;
+}
+
+.dot.active { background: #1a1a2e; transform: scale(1.3); }
+.dot.past { background: #999; }
+
+/* Comparing two sides */
+.compare {
+  display: flex;
+  gap: 2rem;
+  align-items: stretch;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.compare-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  min-width: 200px;
+  max-width: 260px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border: 2px solid #eee;
+  text-align: left;
+}
+
+.compare-card.winner { border-color: #4caf50; background: #f9fff9; }
+
+/* Fade in up */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-up.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* VS badge */
+.vs {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+}
+
+/* Tag */
+.tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tag.green { background: #e8f5e9; color: #2e7d32; }
+.tag.red { background: #ffebee; color: #c62828; }
+.tag.blue { background: #e3f2fd; color: #1565c0; }
+
+/* Magic sparkle */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+.sparkle {
+  display: inline-block;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .slide { padding: 1.25rem; }
+  .char-row { gap: 1.5rem; }
+  .avatar { width: 60px; height: 60px; font-size: 2rem; }
+  .compare { flex-direction: column; align-items: center; }
+  .vs { transform: rotate(90deg); margin: 0.5rem 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-dots" id="dots"></div>
+
+<div class="deck" id="deck">
+
+  <!-- Slide 0: Title -->
+  <div class="slide" data-steps="1">
+    <h1>Draft-to-Funding Markets</h1>
+    <p class="subtitle">What if bets could fund the things they bet on?</p>
+  </div>
+
+  <!-- Slide 1: The Fundraiser -->
+  <div class="slide" data-steps="2">
+    <div class="big-emoji">🌳</div>
+    <h2>Greenville wants a park</h2>
+    <p>The community starts a fundraiser. Goal: <strong>$10,000</strong>.<br>Donations trickle in...</p>
+    <div class="progress-wrap" style="margin-top:1.5rem">
+      <div class="progress-label">
+        <span>Raised</span>
+        <span id="raised-label-1">$0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="bar-1" style="width:0%"></div>
+        <span class="progress-goal">$10,000</span>
+      </div>
+    </div>
+    <p class="desc fade-up" id="fundraiser-desc" style="margin-top:1rem;color:#999">So close, yet so far...</p>
+  </div>
+
+  <!-- Slide 2: Enter the Bettors -->
+  <div class="slide" data-steps="2">
+    <h2>Enter the bettors</h2>
+    <p>Two people with strong opinions show up.</p>
+    <div class="char-row" style="margin-top:1.5rem">
+      <div class="character fade-up" id="betty-intro">
+        <div class="avatar betty">🙋‍♀️</div>
+        <span class="char-name" style="color:#2e7d32">Betty</span>
+        <span class="tag green">YES — $2,000</span>
+        <span class="char-quote">"This community always delivers!"</span>
+      </div>
+      <div class="vs fade-up" id="vs-intro">VS</div>
+      <div class="character fade-up" id="nick-intro">
+        <div class="avatar nick">😏</div>
+        <span class="char-name" style="color:#c62828">Nick</span>
+        <span class="tag red">NO — $4,000</span>
+        <span class="char-quote">"Way too ambitious. Not gonna happen."</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: Time's Running Out -->
+  <div class="slide" data-steps="2">
+    <div class="big-emoji smirk">😏</div>
+    <h2>Clock's ticking...</h2>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Raised</span>
+        <span>$7,000</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:70%">$7K</div>
+        <span class="progress-goal">$10,000</span>
+      </div>
+    </div>
+    <p style="margin-top:1rem;font-size:1.1rem">Still <strong>$3,000</strong> short. Deadline approaching.</p>
+    <p class="fade-up" id="nick-winning" style="margin-top:0.75rem;color:#c62828;font-weight:600">
+      Looks like Nick is about to win...
+    </p>
+  </div>
+
+  <!-- Slide 4: Betty's Aha Moment -->
+  <div class="slide" data-steps="2">
+    <div class="lightbulb">💡</div>
+    <h2>Betty has an idea</h2>
+    <p style="font-size:1.15rem;margin-top:0.5rem">
+      "Wait. If I <strong>donate $3,000</strong>, the goal hits $10,000.<br>
+      Then <strong>I win the bet</strong> — and I collect the whole pot!"
+    </p>
+    <div class="fade-up" id="betty-math" style="margin-top:1.5rem">
+      <div class="protocol-box" style="border-color:#4caf50">
+        <p style="font-weight:600;margin-bottom:0.5rem">Betty's napkin math:</p>
+        <p style="font-size:0.95rem;color:#555;line-height:1.7;text-align:left">
+          Cost: $2K bet + $3K donation = <strong>$5K</strong><br>
+          Reward: $2K + $4K pot = <strong>$6K</strong><br>
+          Profit: <span style="color:#2e7d32;font-weight:700">+$1,000</span> 🤑
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Betty Donates — Goal Reached -->
+  <div class="slide" data-steps="2">
+    <div class="big-emoji" id="goal-emoji">🙋‍♀️💸</div>
+    <h2 id="goal-title">Betty donates $3,000!</h2>
+    <div class="progress-wrap" style="margin-top:1rem">
+      <div class="progress-label">
+        <span>Raised</span>
+        <span id="raised-label-5">$7,000</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="bar-5" style="width:70%">$7K</div>
+        <span class="progress-goal">$10,000</span>
+      </div>
+    </div>
+    <p class="fade-up" id="goal-reached" style="margin-top:1rem;font-size:1.3rem;font-weight:700;color:#2e7d32">
+      🎉 GOAL REACHED! Betty wins the bet!
+    </p>
+    <div id="confetti-container" class="confetti-container"></div>
+  </div>
+
+  <!-- Slide 6: The Accounting -->
+  <div class="slide" data-steps="8">
+    <h2>📊 The Accounting</h2>
+    <div class="ledger" id="ledger-manual">
+      <div class="ledger-row" data-step="1"><span class="label">Betty's bet</span><span class="value">$2,000</span></div>
+      <div class="ledger-row" data-step="2"><span class="label">Betty's donation</span><span class="value">$3,000</span></div>
+      <div class="ledger-divider" data-step="3"></div>
+      <div class="ledger-row" data-step="3"><span class="label">Betty's total cost</span><span class="value blue">$5,000</span></div>
+      <div class="ledger-row" data-step="4"><span class="label">Bet pool (YES + NO)</span><span class="value">$6,000</span></div>
+      <div class="ledger-row" data-step="5"><span class="label">Goal hit → YES wins</span><span class="value green">✓</span></div>
+      <div class="ledger-row" data-step="6"><span class="label">Betty receives</span><span class="value green">$6,000</span></div>
+      <div class="ledger-divider" data-step="7"></div>
+      <div class="ledger-row highlight" data-step="7"><span class="label">Betty's profit</span><span class="value green">+$1,000 ✨</span></div>
+      <div class="ledger-row" data-step="8"><span class="label">Nick</span><span class="value red">−$4,000</span></div>
+      <div class="ledger-row" data-step="8"><span class="label">Community</span><span class="value green">$10,000 park 🌳</span></div>
+    </div>
+  </div>
+
+  <!-- Slide 7: But Wait — Coordination Problem -->
+  <div class="slide" data-steps="3">
+    <h2>But wait... 🤔</h2>
+    <p>What if there are <strong>50 Bettys</strong> and <strong>50 Nicks</strong>?</p>
+    <div class="crowd" id="crowd-container"></div>
+    <div class="fade-up" id="freerider-1">
+      <p style="margin-top:0.75rem;font-size:1rem">
+        <em>"Who donates? Everyone wants someone else to pay."</em>
+      </p>
+    </div>
+    <div class="fade-up" id="freerider-2">
+      <p style="margin-top:0.5rem;color:#c62828;font-weight:600">
+        Classic free-rider problem. The park doesn't get built. Nick wins.
+      </p>
+    </div>
+  </div>
+
+  <!-- Slide 8: Enter BetFundMe -->
+  <div class="slide" data-steps="2">
+    <div class="big-emoji">⚡</div>
+    <h2>Enter <span style="color:#1565c0">BetFundMe</span></h2>
+    <p style="font-size:1.15rem">What if the protocol could do Betty's trick...<br><strong>automatically?</strong></p>
+    <div class="fade-up" id="protocol-reveal" style="margin-top:1.25rem">
+      <p style="font-size:1rem;color:#666">
+        Same pool. Same bets. Same outcome.<br>
+        <strong>No coordination needed.</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- Slide 9: How Drafting Works -->
+  <div class="slide" data-steps="7">
+    <h2>How <span style="color:#1565c0">Drafting</span> Works</h2>
+    <div class="protocol-box">
+      <div class="protocol-step" data-step="1">
+        <div class="step-icon">1</div>
+        <div><strong>Pool it up:</strong> $7K donations + $2K YES + $4K NO = <strong>$13K</strong></div>
+      </div>
+      <div class="protocol-step" data-step="2">
+        <div class="step-icon">2</div>
+        <div><strong>Check goal:</strong> $13K ≥ $10K? <span style="color:#2e7d32;font-weight:700">Yes!</span></div>
+      </div>
+      <div class="protocol-step" data-step="3">
+        <div class="step-icon">3</div>
+        <div><strong>Gap to fill:</strong> $10K − $7K = <strong>$3K</strong> needed from bets</div>
+      </div>
+      <div class="protocol-step" data-step="4">
+        <div class="step-icon" style="background:#c62828">4</div>
+        <div><strong>Draft losers first:</strong> Take $3K from Nick's NO bets → funding</div>
+      </div>
+      <div class="protocol-step" data-step="5">
+        <div class="step-icon">5</div>
+        <div><strong>Remaining:</strong> Nick $1K left · Betty $2K untouched</div>
+      </div>
+      <div class="protocol-step" data-step="6">
+        <div class="step-icon" style="background:#2e7d32">6</div>
+        <div><strong>YES wins → Betty gets:</strong> $2K + $1K = <span style="color:#2e7d32;font-weight:700">$3K</span></div>
+      </div>
+      <div class="protocol-step" data-step="7">
+        <div class="step-icon" style="background:#1565c0">✓</div>
+        <div><strong>Betty's profit: <span style="color:#2e7d32">+$1,000</span></strong> — same result, zero coordination!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: Side-by-Side -->
+  <div class="slide" data-steps="2">
+    <h2>Same outcome. No coordination.</h2>
+    <div class="compare">
+      <div class="compare-card">
+        <h3>🙋‍♀️ Manual Betty</h3>
+        <p style="font-size:0.9rem;line-height:1.6">
+          Bets $2K YES<br>
+          Donates $3K herself<br>
+          Wins: $6K pot<br>
+          <strong>Profit: +$1,000</strong>
+        </p>
+        <p style="font-size:0.8rem;color:#999;margin-top:0.5rem">⚠️ Requires coordination</p>
+      </div>
+      <div class="vs">=</div>
+      <div class="compare-card winner">
+        <h3>⚡ BetFundMe</h3>
+        <p style="font-size:0.9rem;line-height:1.6">
+          Bets $2K YES<br>
+          Protocol drafts $3K from NO<br>
+          Wins: $2K + $1K remaining<br>
+          <strong>Profit: +$1,000</strong>
+        </p>
+        <p style="font-size:0.8rem;color:#2e7d32;margin-top:0.5rem">✅ Fully automatic</p>
+      </div>
+    </div>
+    <p class="fade-up" id="same-magic" style="margin-top:1rem;font-size:1rem;color:#666">
+      The protocol accounts as if coordination happened — because mathematically, it should have.
+    </p>
+  </div>
+
+  <!-- Slide 11: The Insight -->
+  <div class="slide" data-steps="2">
+    <div class="big-emoji"><span class="sparkle">✨</span></div>
+    <h2>The insight</h2>
+    <p style="font-size:1.2rem;line-height:1.7;max-width:560px">
+      <strong>Bet liquidity <em>is</em> potential funding.</strong>
+    </p>
+    <div class="fade-up" id="insight-detail" style="margin-top:1rem">
+      <p style="font-size:1rem;color:#555;line-height:1.7;max-width:520px">
+        No flash loans. No backroom deals.<br>
+        Just good mechanism design.<br><br>
+        The protocol converts strategic intent<br>
+        into <strong>real-world funding</strong> — automatically.
+      </p>
+    </div>
+  </div>
+
+  <!-- Slide 12: Closing -->
+  <div class="slide" data-steps="1">
+    <h1 style="font-size:clamp(1.8rem,4vw,2.8rem)">Draft-to-Funding Markets</h1>
+    <p style="margin-top:0.75rem;font-size:1.1rem;color:#555">
+      Funding meets belief expression meets coordination.
+    </p>
+    <p style="margin-top:1.5rem;font-size:0.95rem;color:#999">
+      Generalizes to multiple thresholds, coalitions,<br>and continuous funding levels.
+    </p>
+    <p style="margin-top:2rem;font-size:0.85rem;color:#bbb">Martin Strobl · 2026</p>
+  </div>
+
+</div>
+
+<div class="nav">
+  <button class="nav-btn" id="prev-btn" disabled>←</button>
+  <span class="slide-counter" id="counter">1 / 13</span>
+  <button class="nav-btn" id="next-btn">→</button>
+</div>
+
+<script>
+(function() {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const totalSlides = slides.length;
+  let current = 0;
+  let subStep = 0;
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(d);
+  });
+  const dots = Array.from(dotsEl.children);
+
+  function getMaxSteps(idx) {
+    return parseInt(slides[idx].dataset.steps) || 1;
+  }
+
+  function updateNav() {
+    document.getElementById('prev-btn').disabled = (current === 0 && subStep === 0);
+    document.getElementById('next-btn').disabled = false;
+    document.getElementById('counter').textContent = `${current + 1} / ${totalSlides}`;
+    dots.forEach((d, i) => {
+      d.className = 'dot' + (i === current ? ' active' : i < current ? ' past' : '');
+    });
+  }
+
+  function showSlide(idx, direction) {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit-left');
+      if (i < idx) s.classList.add('exit-left');
+    });
+    slides[idx].classList.add('active');
+    subStep = 0;
+    triggerSlideEnter(idx);
+    applySubStep(idx, 0);
+    updateNav();
+  }
+
+  function applySubStep(slideIdx, step) {
+    // Show elements whose data-step <= step
+    const els = slides[slideIdx].querySelectorAll('[data-step]');
+    els.forEach(el => {
+      const s = parseInt(el.dataset.step);
+      if (s <= step) {
+        el.classList.add('show');
+      } else {
+        el.classList.remove('show');
+      }
+    });
+    // Show fade-up elements on step > 0
+    const fadeUps = slides[slideIdx].querySelectorAll('.fade-up');
+    if (step > 0) {
+      fadeUps.forEach((el, i) => {
+        setTimeout(() => el.classList.add('show'), i * 150);
+      });
+    }
+  }
+
+  function triggerSlideEnter(idx) {
+    // Reset fade-ups
+    slides[idx].querySelectorAll('.fade-up').forEach(el => el.classList.remove('show'));
+    slides[idx].querySelectorAll('[data-step]').forEach(el => el.classList.remove('show'));
+
+    if (idx === 1) animateFundraiser();
+    if (idx === 2) animateBettors();
+    if (idx === 5) animateGoalReached();
+    if (idx === 7) animateCrowd();
+  }
+
+  function animateFundraiser() {
+    const bar = document.getElementById('bar-1');
+    const label = document.getElementById('raised-label-1');
+    bar.style.width = '0%';
+    label.textContent = '$0';
+    setTimeout(() => {
+      bar.style.width = '70%';
+      animateCounter(label, 0, 7000, 1200, '$');
+    }, 400);
+  }
+
+  function animateBettors() {
+    const els = ['betty-intro', 'vs-intro', 'nick-intro'];
+    els.forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.classList.remove('show');
+      setTimeout(() => el.classList.add('show'), 300 + i * 250);
+    });
+  }
+
+  function animateGoalReached() {
+    const bar = document.getElementById('bar-5');
+    const label = document.getElementById('raised-label-5');
+    bar.style.width = '70%';
+    label.textContent = '$7,000';
+
+    setTimeout(() => {
+      bar.style.width = '100%';
+      bar.style.background = 'linear-gradient(90deg, #4caf50, #2e7d32)';
+      animateCounter(label, 7000, 10000, 1200, '$');
+      bar.textContent = '$10K';
+    }, 600);
+  }
+
+  function animateCrowd() {
+    const container = document.getElementById('crowd-container');
+    container.innerHTML = '';
+    const colors = [];
+    for (let i = 0; i < 50; i++) colors.push('green');
+    for (let i = 0; i < 50; i++) colors.push('red');
+    // Shuffle
+    for (let i = colors.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [colors[i], colors[j]] = [colors[j], colors[i]];
+    }
+    colors.forEach((c, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'crowd-dot ' + c;
+      container.appendChild(dot);
+      setTimeout(() => dot.classList.add('show'), 20 * i);
+    });
+  }
+
+  function fireConfetti() {
+    const container = document.getElementById('confetti-container');
+    container.innerHTML = '';
+    const colors = ['#4caf50','#66bb6a','#ffc107','#ff9800','#2196f3','#e91e63','#9c27b0'];
+    for (let i = 0; i < 60; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + '%';
+      piece.style.top = '-10px';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.width = (4 + Math.random() * 8) + 'px';
+      piece.style.height = (4 + Math.random() * 8) + 'px';
+      container.appendChild(piece);
+
+      const destX = (Math.random() - 0.5) * 300;
+      const destY = window.innerHeight + 50;
+      const dur = 1500 + Math.random() * 2000;
+      const delay = Math.random() * 500;
+
+      piece.animate([
+        { opacity: 1, transform: `translate(0, 0) rotate(0deg)` },
+        { opacity: 1, transform: `translate(${destX}px, ${destY}px) rotate(${360 + Math.random()*720}deg)` },
+        { opacity: 0, transform: `translate(${destX}px, ${destY + 40}px) rotate(${720 + Math.random()*360}deg)` }
+      ], { duration: dur, delay: delay, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+    }
+  }
+
+  function animateCounter(el, from, to, duration, prefix) {
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const val = Math.round(from + (to - from) * eased);
+      el.textContent = prefix + val.toLocaleString();
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function advance() {
+    const maxSteps = getMaxSteps(current);
+    if (subStep < maxSteps - 1) {
+      subStep++;
+      applySubStep(current, subStep);
+      // Fire confetti on goal slide step 2
+      if (current === 5 && subStep === 1) {
+        setTimeout(fireConfetti, 300);
+      }
+      updateNav();
+    } else if (current < totalSlides - 1) {
+      current++;
+      showSlide(current, 1);
+    }
+  }
+
+  function retreat() {
+    if (subStep > 0) {
+      subStep--;
+      applySubStep(current, subStep);
+      updateNav();
+    } else if (current > 0) {
+      current--;
+      showSlide(current, -1);
+      // Jump to last substep of previous slide
+      const maxSteps = getMaxSteps(current);
+      subStep = maxSteps - 1;
+      applySubStep(current, subStep);
+    }
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advance(); }
+    if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); retreat(); }
+  });
+
+  // Click
+  document.getElementById('next-btn').addEventListener('click', advance);
+  document.getElementById('prev-btn').addEventListener('click', retreat);
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) advance(); else retreat();
+    }
+  });
+
+  // Click on slide area to advance (not on nav)
+  document.getElementById('deck').addEventListener('click', e => {
+    if (e.target.closest('.nav') || e.target.closest('.nav-btn')) return;
+    advance();
+  });
+
+  // Init
+  showSlide(0, 1);
+})();
+</script>
+</body>
+</html>
